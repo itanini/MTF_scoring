@@ -44,13 +44,34 @@ def score_image(image_path, kernel_size = 5, enter_lps_manually = False):
             return "skip", None
 
 
-    preprocessed_image = pre.preprocess_image(original_image, display= True)
+    preprocessed_image = pre.preprocess_image(original_image, display= False)
     no_white_image = preprocessed_image.astype(float)
     y_axis_mean = np.nanmean(no_white_image, axis=0)
     smoothed_y_axis_mean = scipy.ndimage.median_filter(y_axis_mean, size=kernel_size)
     score = contrast_score(smoothed_y_axis_mean)
     print(f'Image Score : {score}')
     return lps, score
+    # contrast_as_function_of_kernel_size(preprocessed_image)
+
+def score_image_interactive(image_path, kernel_size = 5, enter_lps_manually = False):
+    original_image = cv2.imread(image_path)
+
+
+    if enter_lps_manually:
+        rgb_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+        plt.imshow(rgb_image)
+        plt.title("Original Image - Enter LPS")
+        plt.axis('off')
+        plt.show()
+
+    preprocessed_image = pre.preprocess_image(original_image, display= False)
+    no_white_image = preprocessed_image.astype(float)
+    y_axis_mean = np.nanmean(no_white_image, axis=0)
+    smoothed_y_axis_mean = scipy.ndimage.median_filter(y_axis_mean, size=kernel_size)
+    score = contrast_score(smoothed_y_axis_mean)
+    print(f'Image Score : {score}')
+    return score
+    
     # contrast_as_function_of_kernel_size(preprocessed_image)
 
 def contrast_as_function_of_kernel_size(preprocessed_image):
