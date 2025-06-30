@@ -6,9 +6,11 @@ import preprocess_img_manually
 import scipy
 import warnings
 
+WHITE_THRESHOLD = 150 #Thresh to define white lines
+
 def find_black_line_distances(img):
     # Threshold to isolate dark lines
-    _, binary = cv2.threshold(img, 180, 255, cv2.THRESH_BINARY_INV)
+    _, binary = cv2.threshold(img, WHITE_THRESHOLD, 255, cv2.THRESH_BINARY_INV)
 
     # Find contours
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -67,14 +69,16 @@ def preprocess_image(img, display = False):
             # Get the corresponding angle from the distances
             optimal_rotation_angle = angles[minimal_index]
             rotated_image = preprocess_img_manually.rotate(user_rotated_image, angle= optimal_rotation_angle)
+            made_optimization = True
             if display:
                 display_results(dict(zip(angles, smooth_distances)), rotated_image, user_angle)
     except Exception as e:
         print(f"Warning or error encountered: {e}")
         rotated_image = user_rotated_image
+        made_optimization = False
 
     # Extract keys and values
-    return rotated_image
+    return rotated_image, made_optimization
 
 
 def display_results(distance_as_function_of_angle, rotated_image, user_angle):
