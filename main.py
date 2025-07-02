@@ -1,5 +1,5 @@
 # This is a sample Python script.
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 import cv2
 # Press Shift+F10 to execute it or replace it with your code.
@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 import cv2
+import pandas as pd
 from PIL import Image, ImageTk
 import serial as ser
 from serial.tools import list_ports
@@ -158,7 +159,7 @@ class MiniscopeApp:
         self.capture_button.place(relx=0.5, rely=0.9, anchor='center')  # fixed below label
 
         # Initialize webcam and start feed
-        self.video_capture = cv2.VideoCapture(1)
+        self.video_capture = cv2.VideoCapture(0)
         self.current_lp_index = 0
         self.update_webcam()
 
@@ -260,7 +261,7 @@ class MiniscopeApp:
                 self.start_capture_sequence()
             else:
                 tk.messagebox.showinfo("Done", "All LPS processed.")
-                scoring_plot(self.LPS, self.scores)
+                extract_results(self.LPS, self.scores)
                 self.close_camera_window()
             return
 
@@ -276,7 +277,7 @@ class MiniscopeApp:
 
         else:
             tk.messagebox.showinfo("Done", "All LPS processed.")
-            scoring_plot(self.LPS, self.scores)
+            extract_results(self.LPS, self.scores)
             self.close_camera_window()
 
     def ask_for_lps(self):
@@ -337,7 +338,9 @@ class MiniscopeApp:
     def connect_serial_port(self):
         port = self.selected_com.get()
         try:
-            self.serial_port = ser.Serial(port, 9600)
+            self.serial_port = ser.Serial(port, baudrate=115200)
+            ser.close()
+            ser.open()
             tk.messagebox.showinfo("Connected", f"Connected to {port}")
         except Exception as e:
             tk.messagebox.showerror("Error", f"Failed to connect to {port}\n{e}")
@@ -348,12 +351,33 @@ class MiniscopeApp:
             self.serial_port.write(s)
             
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff')
-# LPS = [23,26,29,32,40,45,51,54,64,72,80,90,101,114,128,143,161,180]
-LPS = [23,26,29]
 
 
 
-def scoring_plot(lps_list_sorted, score_list_sorted):
+
+def extract_results(lps_list_sorted, score_list_sorted):
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    save_path = filedialog.asksaveasfilename(
+        title="Save Results As",
+        defaultextension=".csv",
+        filetypes=[("CSV files", "*.csv")],
+        initialfile="miniscope_results.csv"
+    )
+    root.destroy()
+
+    if not save_path:
+        tk.messagebox.showwarning("Cancelled", "No file selected. Results were not saved.")
+
+    # Save CSV
+    result_table = pd.DataFrame({'LPS': lps_list_sorted, 'Score': score_list_sorted})
+    result_table.to_csv(save_path, index=False)
+
+    plot_score(lps_list_sorted, score_list_sorted)
+
+
+def plot_score(lps_list_sorted, score_list_sorted):
     plt.figure(figsize=(8, 5))
     plt.plot(lps_list_sorted, score_list_sorted, color='blue', marker='o')
     plt.axhline(y=0, color='gray', linestyle='--', linewidth=1)
@@ -377,30 +401,11 @@ def interactive_main():
 
 
 
-def choose_COM():
-    print("------------------------")
-    print("Available COM port:")
-    print("------------------------")
-    port = list(list_ports.comports())
-    idx = 0
-    for p in port:
-        print(str(idx) + ': ' + str(p.device))
-        idx += 1
-    com_idx = input('Type COM channel number: ')
-    return str(port[int(com_idx)].device)
-
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # com_dev = choose_COM()
-    # ser = serial.Serial(com_dev, baudrate=115200)
 
     interactive_main()
 
-# if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='Process images and plot scores vs LPS.')
-    # parser.add_argument('image_dir', type=str, help='Path to the directory containing images.')
-    # args = parser.parse_args()
-    # main(args.image_dir)
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
